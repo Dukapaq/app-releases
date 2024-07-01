@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: Update version.json
         run: |
@@ -25,5 +25,4 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add version.json
-          git commit -m "Update version.json for ${{ github.ref }}"
-          git push origin HEAD:${{ github.event.release.target_commitish }} --force
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update version.json for ${{ github.ref }}" && git push)
