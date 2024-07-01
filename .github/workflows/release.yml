@@ -5,27 +5,32 @@ on:
     types: [published]
 
 jobs:
-  update-version:
+  update-version-json:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+
     steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Get release info
+        id: release
+        run: |
+          RELEASE_TAG=${{ github.event.release.tag_name }}
+          RELEASE_URL=${{ github.event.release.assets[0].browser_download_url }}
+          echo "RELEASE_TAG=$RELEASE_TAG" >> $GITHUB_ENV
+          echo "RELEASE_URL=$RELEASE_URL" >> $GITHUB_ENV
 
       - name: Update version.json
         run: |
-          VERSION=$(echo ${{ github.ref }} | sed 's/refs\/tags\///')
-          jq --arg v "$VERSION" --arg u "${{ github.event.release.assets[0].browser_download_url }}" \
-            '.version = $v | .url = $u' version.json > tmp.json && mv tmp.json version.json
+          jq --arg version "$RELEASE_TAG" --arg url "$RELEASE_URL" '.version = $version | .url = $url' version.json > version_tmp.json
+          mv version_tmp.json version.json
 
       - name: Commit and push changes
         run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git add version.json
-          git commit -m "Update version.json for ${{ github.ref }}"
+          git commit -m "Update version.json for release $RELEASE_TAG"
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
