@@ -1,0 +1,31 @@
+name: Update Version JSON
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  update-version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all history for all branches and tags
+
+      - name: Update version.json
+        run: |
+          VERSION=$(echo ${{ github.ref }} | sed 's/refs\/tags\///')
+          jq --arg v "$VERSION" --arg u "${{ github.event.release.assets[0].browser_download_url }}" \
+            '.version = $v | .url = $u' version.json > tmp.json && mv tmp.json version.json
+
+      - name: Commit and push changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Update version.json for ${{ github.ref }}"
+          branch: ${{ github.event.release.target_commitish }}
+          file_pattern: "version.json"
+          commit_user_name: "github-actions[bot]"
+          commit_user_email: "github-actions[bot]@users.noreply.github.com"
+          commit_author: "GitHub Actions <actions@github.com>"
