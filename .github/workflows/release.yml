@@ -7,12 +7,11 @@ on:
 jobs:
   update-version:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
+          token: ${{ secrets.PAT }} # Use the PAT for checkout
 
       - name: Update version.json
         run: |
@@ -21,9 +20,11 @@ jobs:
             '.version = $v | .url = $u' version.json > tmp.json && mv tmp.json version.json
 
       - name: Commit and push changes
+        env:
+          PAT: ${{ secrets.PAT }} # Use the PAT for push
         run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
           git add version.json
           git commit -m "Update version.json for ${{ github.ref }}"
-          git push
+          git push https://$PAT@github.com/${{ github.repository }}.git HEAD:${{ github.event.release.target_commitish }}
