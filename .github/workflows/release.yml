@@ -9,15 +9,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0 # This ensures all history is fetched
+
       - name: Update version.json
         run: |
-          VERSION=$(echo ${{ github.ref }} | sed 's/refs\/tags\/v//')
+          VERSION=$(echo ${{ github.ref }} | sed 's/refs\/tags\///')
           jq --arg v "$VERSION" --arg u "${{ github.event.release.assets[0].browser_download_url }}" \
             '.version = $v | .url = $u' version.json > tmp.json && mv tmp.json version.json
+
       - name: Commit and push changes
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
+          git checkout -b temp-branch
           git add version.json
           git commit -m "Update version.json for ${{ github.ref }}"
-          git push
+          git push origin HEAD:${{ github.event.release.target_commitish }} --force
