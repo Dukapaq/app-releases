@@ -1,0 +1,23 @@
+name: Update Version JSON
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  update-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Update version.json
+        run: |
+          VERSION=$(echo ${{ github.ref }} | sed 's/refs\/tags\/v//')
+          jq --arg v "$VERSION" --arg u "${{ github.event.release.assets[0].browser_download_url }}" \
+            '.version = $v | .url = $u' version.json > tmp.json && mv tmp.json version.json
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add version.json
+          git commit -m "Update version.json for ${{ github.ref }}"
+          git push
