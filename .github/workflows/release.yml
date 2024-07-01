@@ -10,7 +10,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
@@ -26,6 +26,4 @@ jobs:
           git config --local user.name "github-actions[bot]"
           git add version.json
           git commit -m "Update version.json for ${{ github.ref }}"
-          git push
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          git push origin HEAD:${{ github.event.release.target_commitish }} --force
